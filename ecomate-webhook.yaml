@@ -1,0 +1,113 @@
+openapi: 3.0.3
+info:
+  title: Ecomate WhatsApp Webhook
+  version: 1.0.0
+  description: >
+    Webhook API untuk menerima pesan WhatsApp. 
+    Mendukung verifikasi token (GET) dan menerima event pesan (POST).
+servers:
+  - url: https://ecomate-webhook.vercel.app
+paths:
+  /api/webhook:
+    get:
+      summary: Verifikasi webhook WhatsApp
+      description: Endpoint ini digunakan oleh WhatsApp untuk verifikasi webhook.
+      parameters:
+        - name: hub.mode
+          in: query
+          required: true
+          schema:
+            type: string
+            example: subscribe
+        - name: hub.verify_token
+          in: query
+          required: true
+          schema:
+            type: string
+            example: YOUR_VERIFY_TOKEN
+        - name: hub.challenge
+          in: query
+          required: true
+          schema:
+            type: string
+            example: 123456789
+      responses:
+        '200':
+          description: Challenge berhasil dikembalikan
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: 123456789
+        '403':
+          description: Token tidak valid / Forbidden
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Forbidden
+    post:
+      summary: Terima event pesan WhatsApp
+      description: >
+        Endpoint ini menerima event pesan dari WhatsApp. 
+        Signature harus cocok dengan APP_SECRET.
+      parameters:
+        - name: x-hub-signature-256
+          in: header
+          required: true
+          schema:
+            type: string
+            example: sha256=abcdef1234567890
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                entry:
+                  type: array
+                  description: Daftar entry WhatsApp
+                  items:
+                    type: object
+                    properties:
+                      changes:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            field:
+                              type: string
+                              example: messages
+                            value:
+                              type: object
+                              properties:
+                                messages:
+                                  type: array
+                                  items:
+                                    type: object
+                                    properties:
+                                      from:
+                                        type: string
+                                        example: "6281234567890"
+                                      text:
+                                        type: object
+                                        properties:
+                                          body:
+                                            type: string
+                                            example: "Halo, ini pesan tes"
+      responses:
+        '200':
+          description: Event diterima
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: EVENT_RECEIVED
+        '401':
+          description: Signature tidak valid
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Invalid signature
