@@ -2,28 +2,13 @@ import Fastify from "fastify";
 import crypto from "crypto";
 import fetch from "node-fetch";
 
-// --- ENV VARS ---
 const APP_SECRET = process.env.APP_SECRET;
 const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
 const WHATSAPP_NUMBER_ID = process.env.WHATSAPP_NUMBER_ID;
 const ACCESS_TOKEN = process.env.ACCESS_TOKEN;
 
-// --- FASTIFY INSTANCE ---
-const fastify = Fastify({
-  logger: true,
-  // disable request logging untuk serverless
-  disableRequestLogging: true,
-});
+const fastify = Fastify();
 
-fastify.listen({ port: 3000 }, (err, address) => {
-  if (err) {
-    console.error(err);
-    process.exit(1);
-  }
-  console.log(`Server running at ${address}`);
-});
-
-// --- ROUTES ---
 fastify.get("/api/webhook", async (req, reply) => {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
@@ -37,7 +22,7 @@ fastify.get("/api/webhook", async (req, reply) => {
 
 fastify.post("/api/webhook", async (req, reply) => {
   const signature = req.headers["x-hub-signature-256"];
-  const bodyRaw = JSON.stringify(req.body || {});
+  const bodyRaw = JSON.stringify(req.body);
 
   const hash = `sha256=${crypto
     .createHmac("sha256", APP_SECRET)
@@ -59,24 +44,19 @@ fastify.post("/api/webhook", async (req, reply) => {
 
           console.log("Pesan masuk:", from, text);
 
-          // Kirim balasan otomatis
-          try {
-            await fetch(`https://graph.facebook.com/v24.0/${WHATSAPP_NUMBER_ID}/messages`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${ACCESS_TOKEN}`,
-              },
-              body: JSON.stringify({
-                messaging_product: "whatsapp",
-                to: from,
-                type: "text",
-                text: { body: `Halo, kami terima pesanmu: "${text}"` },
-              }),
-            });
-          } catch (err) {
-            console.error("Gagal kirim balasan:", err);
-          }
+          await fetch(`https://graph.facebook.com/v24.0/${WHATSAPP_NUMBER_ID}/messages`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${ACCESS_TOKEN}`,
+            },
+            body: JSON.stringify({
+              messaging_product: "whatsapp",
+              to: from,
+              type: "text",
+              text: { body: `Halo, kami terima pesanmu: "${text}"` },
+            }),
+          });
         }
       }
     }
@@ -85,7 +65,7 @@ fastify.post("/api/webhook", async (req, reply) => {
   return reply.code(200).send("EVENT_RECEIVED");
 });
 
-// --- VERCEL SERVERLESS HANDLER ---
+// **Vercel handler**
 export default async function handler(req, res) {
   await fastify.ready();
   fastify.server.emit("request", req, res);
