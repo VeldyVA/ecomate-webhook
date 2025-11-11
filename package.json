@@ -1,0 +1,26 @@
+{
+  "name": "ecomate-webhook",
+  "version": "1.0.0",
+  "description": "Webhook server Fastify untuk WhatsApp API",
+  "main": "api/webhook.js",
+  "type": "module",
+  "scripts": {
+    "start": "node api/webhook.js",
+    "dev": "nodemon api/webhook.js"
+  },
+  "keywords": [
+    "fastify",
+    "whatsapp",
+    "webhook",
+    "api"
+  ],
+  "author": "Veldy Verdiyansyah",
+  "license": "MIT",
+  "dependencies": {
+    "fastify": "^4.23.0",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
